@@ -1,0 +1,53 @@
+#!/bin/bash
+# Updated 2025.05.06 - Split into spring, fall crontab files
+# Updated 2025.04.30 - Return to summer schedule, no HVAC. Rename zones
+# Updated 2024.10.05 - Disable Irrigation and HVAC for Winter
+# Updated 2024.07.02 - Move Irrigation to night (new battery bank)
+# Updated 2024.05.09 - Quick-Irrigation now has pump set as var
+
+## IRRIGATION AUTOMATION ##
+
+# AC Pump: Shut pump down if battery bank is low
+*/10 * * * * /home/kiot/scripts/quick-battery-protection.sh
+
+### Spring & Summer Schedule (Morning Drip from Solar/Surplus AC, Off in afternoon for AirCond use)
+# == 1. Run Sprinklers in early morning (skips if SOC low)
+00 5 * * * /home/kiot/scripts/quick-irrigation.sh jupiter
+30 5 * * * /home/kiot/scripts/quick-irrigation.sh moon
+00 6 * * * /home/kiot/scripts/quick-irrigation.sh ceres
+30 6 * * * /home/kiot/scripts/quick-irrigation.sh pluto
+00 7 * * * /home/kiot/scripts/quick-irrigation.sh off
+
+# == 2. Run Sprinklers in evening (skips if SOC low)
+00 19 * * * /home/kiot/scripts/quick-irrigation.sh jupiter
+30 19 * * * /home/kiot/scripts/quick-irrigation.sh moon
+00 20 * * * /home/kiot/scripts/quick-irrigation.sh ceres
+30 20 * * * /home/kiot/scripts/quick-irrigation.sh pluto
+00 21 * * * /home/kiot/scripts/quick-irrigation.sh off
+
+# == 3. Drip Lines in morning rotate every hour (skips if SOC low)
+00 09 * * * /home/kiot/scripts/quick-irrigation.sh mercury
+00 10 * * * /home/kiot/scripts/quick-irrigation.sh venus
+00 11 * * * /home/kiot/scripts/quick-irrigation.sh earth
+00 12 * * * /home/kiot/scripts/quick-irrigation.sh mars
+00 13 * * * /home/kiot/scripts/quick-irrigation.sh off
+
+
+# == Reset Flow Meter Daily
+00 00 * * * /home/kiot/scripts/reset-flow-meter.sh
+
+## Networking
+##   Update Cloudflare Dynamic DNS
+0 * * * * /home/kiot/scripts/dynamic-dns.sh
+
+## Monitoring
+#  Send DC Power monitoring data to InfluxDB
+* * * * * python3 /home/kiot/DcPowerMonitor/influx-sender.py
+
+## Solar Telemetry
+#   KeepAlive to Victon MQTT server, to cause it to report metrics every minute
+* * * * * /home/kiot/IotMonitoringApps/telegraf/victron.read-request.sh
+@reboot   python3 /home/kiot/scripts/victron-mqtt.py
+
+# Weather Telemetry
+@reboot python3 /home/kiot/scripts/ambient-mqtt.py

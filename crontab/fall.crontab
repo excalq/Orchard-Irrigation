@@ -1,0 +1,51 @@
+#!/bin/bash
+# Updated 2025.05.06 - Split into spring, summer crontab files
+# Updated 2025.04.30 - Return to summer schedule, no HVAC. Rename zones
+# Updated 2024.10.05 - Disable Irrigation and HVAC for Winter
+# Updated 2024.07.02 - Move Irrigation to night (new battery bank)
+# Updated 2024.05.09 - Quick-Irrigation now has pump set as var
+
+## IRRIGATION AUTOMATION ##
+
+# AC Pump: Shut pump down if battery bank is low
+*/10 * * * * /home/kiot/scripts/quick-battery-protection.sh
+
+### Fall Power Conservation Schedule
+## 1. PR: Drip lines in AM
+00 08 * * * /home/kiot/scripts/quick-irrigation.sh mercury
+30 09 * * * /home/kiot/scripts/quick-irrigation.sh venus
+00 11 * * * /home/kiot/scripts/quick-irrigation.sh earth
+00 12 * * * /home/kiot/scripts/quick-irrigation.sh mars
+
+## 2. Sprinklers in Afternoon 2x(garden, west, east, center), garden
+00 13 * * * /home/kiot/scripts/quick-irrigation.sh jupiter
+30 13 * * * /home/kiot/scripts/quick-irrigation.sh pluto
+00 14 * * * /home/kiot/scripts/quick-irrigation.sh ceres
+30 14 * * * /home/kiot/scripts/quick-irrigation.sh moon
+00 15 * * * /home/kiot/scripts/quick-irrigation.sh jupiter
+30 15 * * * /home/kiot/scripts/quick-irrigation.sh pluto
+00 16 * * * /home/kiot/scripts/quick-irrigation.sh ceres
+30 16 * * * /home/kiot/scripts/quick-irrigation.sh moon
+30 17 * * * /home/kiot/scripts/quick-irrigation.sh jupiter
+30 18 * * * /home/kiot/scripts/quick-irrigation.sh off
+
+
+# == Reset Flow Meter Daily
+00 00 * * * /home/kiot/scripts/reset-flow-meter.sh
+
+## Networking
+##   Update Cloudflare Dynamic DNS
+0 * * * * /home/kiot/scripts/dynamic-dns.sh
+
+## Monitoring
+#  Send DC Power monitoring data to InfluxDB
+* * * * * python3 /home/kiot/DcPowerMonitor/influx-sender.py
+
+## Solar Telemetry
+#   KeepAlive to Victon MQTT server, to cause it to report metrics every minute
+* * * * * /home/kiot/IotMonitoringApps/telegraf/victron.read-request.sh
+@reboot   python3 /home/kiot/scripts/victron-mqtt.py
+
+# Weather Telemetry
+@reboot python3 /home/kiot/scripts/ambient-mqtt.py
+
